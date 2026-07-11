@@ -1,0 +1,61 @@
+======Python Setup====
+- UV is a third party python library manager written in Rust🚀.
+- Faster than pip/pip-tools.
+- Creates virtual environments.
+- Check UV is installed:
+	cmd> uv --version
+- Create our virtual environment(safest way to handle third party libraries):
+	cmd> uv venv
+- Activate it:
+	cmd> ".venv\Scripts\activate"
+- Install a library:
+	cmd> uv pip install <package_name>
+
+
+========JARVIS=========
+- Stands for:
+	"Just A Rather Very Intelligent System"
+- Goal:
+	> Assistant that listens to you
+	> Assistant that understands you(voice input)
+	> Assistant speaks back output of the commands.
+- We learn:
+	> Speech Recognition
+	> Natural Language Processing
+	> Text-To-Speech
+
+========Algorithm-STeps Taken==========
+- A real-time voice assistant in Python
+- Listens to your microphone,converts speech to text, understands the command and speaks back
+- Extend it with APIs:
+	> Weather
+	> Wikipedia
+	> Emails
+	> Spotify
+- Run it locally
+- Install Dependancies:
+	cmd> uv pip install speechrecognition pyttsx3 pyaudio requests
+- Incase pyaudio fails on windows, run:
+	cmd> uv 
+
+=======Project Structure==========
+Voice_assistant/
+	assistant.py     ------> Core logic
+	commands.py	-------> Custom commands
+
+
+============Improvements=============
+- Piper TTS
+	>> Lightweight
+	>> Voice Cloning
+	>> Text-to-Speach
+Can run on both windows and Linux
+Give your robots voice
+
+- Chatterbox
+	>> Voice Cloning
+	>> text-to-speach
+https://medium.com/data-and-beyond/open-source-voice-cloning-with-chatterbox-clone-any-voice-in-a-few-seconds-54bd23fd71fe
+
+- Get More here:
+https://nerdynav.com/open-source-ai-voice/

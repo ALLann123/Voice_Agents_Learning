@@ -1,0 +1,56 @@
+=======What is uv?=====
+- Uv is a super-fast replacement for tools like pip, pip-tools, and 
+virtualenv written in Rust.
+Handles:
+	> Installing packages
+	> Managiving virtual environments
+	> Lockfiles(like poetry)
+
+====Installing uv=====
+- On Linux:
+	kali> curl -LsSf https://astral.sh/uv/install.sh | sh
+- On windows(Powershell):
+	PS>> irm https://astral.sh/uv/install.ps1 | iex
+We can also use:
+	machine> pip install uv
+
+
+===Verify Installation====
+	kali> uv --version
+	Ps>> uv --version
+
+====Create a project & virtual environment=====
+- Directory:
+	Ps>> mkdir my-project
+	Ps>> cd my-project
+- Create a virtual environment:
+	Ps> uv venv
+- Now activate it:-
+1. Linux:
+	kali> source .venv/bin/activate
+2. WIndows:
+	Ps>> .venv\Scripts\activate
+
+====Install Packages======
+- Instead of pip install use:
+	Ps>> uv pip install <package_name>
+
+
+====Using requirements or Lock Files===
+- Using file:
+	Ps>> uv pip install -r requirements.txt
+- Create a lockfile:
+	Ps>> uv pip compile pyproject.toml
+
+
+====Initialize a project====
+- Creates a pyproject.toml for you:
+	Ps>> uv init
+
+======Additional Context===
+- On a windows machine for efficiency use the "c:"drive as compared to 
+installing the others.
+- When using the other drives just permanently suppress warnings:
+	Ps>> setx UV_LINK_MODE copy
+
+
