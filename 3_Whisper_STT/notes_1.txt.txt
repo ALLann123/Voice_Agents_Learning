@@ -1,0 +1,34 @@
+======Whisper========
+- Whisper is an open-source automatic speech recognition(ASR) model that is incredibly popular
+for transcription.
+- It's:
+	> High Accurate
+	> Multilingual
+	> Run's locally no internet
+- Whisper excels in real-world scenario's.:
+	> Does not struggle with accents
+	> Does not struggle by background noise
+	> Does not struggle with multiple speakers
+- We can run it inthe command line or using python
+- Requires:
+> FFmpeg--> Audio processing and conversion.
+- We can issolate the python dependancies using:
+	> uv package manager
+	> pip package manager
+- We will be using uv since its fast🚀🚀🎉
+- Install the libraries:
+	cmd>> uv pip install openai-whisper ffmpeg-python
+Will take a while as it installs additional dependancies⚓
+- Verify installation:	
+	cmd>> python -c "import whisper; print('Whisper is ready!')"
+*******************************************************************************************
+(11_Voice_Assistant) J:\11_Voice_Assistant>python -c "import whisper; print('Whisper is ready!')"
+Whisper is ready!
+*******************************************************************************************
+
+
+============First Set of code==========
+- We have two programs:
+	record.py ----> responsible for recording audio
+	transcribe.py ----> responsible for translating the audio to text
+
