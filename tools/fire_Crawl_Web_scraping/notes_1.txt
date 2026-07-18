@@ -1,0 +1,87 @@
+====What is Firecrawl=====
+- Is an LLM-Optimized web reader
+- Normal web pages contain:
+	> HTML
+	> CSS
+	> JS
+	> Ads
+	> Navigation bars
+	> Cookie Banners
+	> Sidebars
+	> Comments
+- An LLM doesnt need any of that.
+
+=====Main Features======
+- Crawl a web site like:
+	"https://docs.python.org/"
+- Firecrawl reads the page:
+	firecrawl.scrape_url(url)
+Returns something like:
+***********************************
+Python Documentation
+
+Python is an interpreted language...
+
+Functions
+
+Variables
+
+Classes
+***********************************
+N/B: Crawl an entire website:
+	"https://docs.python.org/*"
+Returns hundreds of pages to an LLM:
+
+2. Instead of extracting everything, we can tell firecrawl to extract what you want:
+Example:
+***************************
+Extract
+
+- price
+- title
+- author
+***************************
+Perfect for AI agents
+
+3. Convert to Markdown
+- LLMs love it❤🎆
+
+
+======Installation========
+- Using uv(lightning fast package manager):
+	cmd>> uv pip install firecrawl-py
+
+- Go to the website and get our API Key:
+- Copy the API key to our .env file
+
+============Python Example=========
+#!/usr/bin/python3
+import os
+from dotenv import load_dotenv
+from firecrawl import FirecrawlApp
+
+# environment varibles to be loaded
+load_dotenv()
+
+# get our API
+API_KEY=os.getenv("FIRECRAWL")
+
+# create an instance
+app=FirecrawlApp(api_key=API_KEY)
+
+# get the response
+response=app.scrape_url(
+    url="https://docs.python.org/3/tutorial/",
+    formats=["markdown"]
+)
+
+print(response)
+
+
+**************RESULT**************************
+"""
+(11_Voice_Assistant) J:\_Voice_Assistant\Toolsfire_Crawl_Web_scraping>python main.py
+markdown='### Navigation\n\n- [index](https://docs.python.org/3/genindex.html "General Index")\n- [modules](https://docs.python.org/3/py-modindex.html "Python Module Index") \\|\n- [next](https://docs.python.org/3/tutorial/appetite.html "1. Whetting Your Appetite") \\|\n- [previous](https://docs.python.org/3/whatsnew/changelog.html "Changelog") \\|\n- ![Python logo](https://docs.python.org/3/_static/py.svg)\n- [Python](https://www.python.org/) »\n- Greek \\| ΕλληνικάEnglishSpanish \\| españolFrench \\| françaisItalian \\| italianoJapanese \\| 日本語Korean \\| 한국어Polish \\| polskiBrazilian Portuguese \\| Português brasileiroRomanian \\| RomâneșteTurkish \\| TürkçeSimplified Chinese \\| 简体中文Traditional Chinese \\| 繁體中文\n\ndev (3.16)pre (3.15)3.14.63.133.123.113.103.93.83.73.63.53.43.33.23.13.02.72.6\n\n- [3.14.6 Documentation](https://docs.python.org/3/index.html) »\n\n- [The Python Tutorial](https://docs.python.org/3/tutorial/)\n- \\|\n\n- Theme\nAutoLightDark \\|\n\n# The Python Tutorial [¶](https://docs.python.org/3/tutorial/\\#the-python-tutorial "Link to this heading")\n\nTip\n\nThis tutorial is designed for\n_programmers_ that are new to the Python language,\n**not** _beginners_ who are new to programming.\n\nPython is an easy to learn, powerful programming language. It has efficient\nhigh-level data structures and a simple but effective approach to\nobject-oriented programming. Python’s elegant syntax and dynamic typing,\ntogether with its interpreted nature, make it an ideal language for scripting\nand rapid application development in many areas on most platforms.\n\nThe Python interpreter and the extensive standard library are freely available\nin source or binary form for all major platforms from the Python website,\n[https://www.python.org/](https://www.python.org/), and may be freely distributed. The same site also\ncontains distributions of and pointers to many free third party Python modules,\nprograms and tools, and additional documentation.\n\nThe Python interpreter is easily extended with new functions and data types\nimplemented in C or C++ 
+
+"""
+***********************************************************
