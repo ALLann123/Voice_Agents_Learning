@@ -1,0 +1,110 @@
+============Architecture of MCP=============
+Python Functions
+	|
+FastMCP Tools
+	|
+MCP Server
+	|
+Claude Desktop/VS Code/ ChatGPT/AI AGent
+	|
+Calls Your Python Functions Automatically
+
+
+
+
+=====What is MCP?=======
+- Is an open protocol that allows AI models to use external tools
+- LLM Decides:
+	> I shouldnt calculate this myself
+	> I'll call the Calculator Tool
+
+=======What is FastMCP========
+- Is a python framework for building MCP servers.
+- Think of it like:
+Flask:
+	"Build web servers"
+FastAPI:
+	"builds APIs"
+FastMCP:
+	"builds MCP Servers"
+- We write something like this:
+*****************************
+@mcp.tool()
+def calculator(a,b):
+	return a + b
+*****************************
+FastMCP library handles the rest.
+- Install:
+	cmd> uv pip install fastmcp
+
+
+=====My First MCP Server======
+- Open server.py
+**********************************************************
+#!/usr/bin/python3
+from fastmcp import FastMCP
+
+# Creates an MCP server
+mcp=FastMCP("My First Server")
+
+# python decorator-->expose the function as a tool.
+# without it AI will never know it is a tool
+@mcp.tool()
+def hello(): #our function which is a tool now for an AI
+    """Say Hello"""   # Docstring---> AI reads it to know when to use the tool
+    return "Hello from FastMCP!"  # the returned data from the tool to the AI
+
+# We can have multiple tools
+@mcp.tool()
+def calculator(a: int, b: int)-> int:
+    """Add two numbers"""
+    return a + b
+
+# We can have data thats not a string but a dictionary or a list
+@mcp.tool()
+def student():
+    """Return the student information"""
+    # our dictionary. In a real world scenario this queries the data base.
+    return {
+        "name":"Allan",
+        "course":"computing scnience",
+        "year":2
+    }
+
+if __name__=="__main__":
+    # Starts the MCP server.
+    mcp.run()
+**********************************************************
+- We import existing functionalities and expose them through a single MCP server.
+
+===========Advantages=======
+- AI doesnt know how your code works internally.
+- It only knows:
+	> Tool's name
+	> Description
+	> Parameters
+	> and the value it returns
+FastMCP handles all communiction between the AI and your Python functions.
+
+
+=========MCP Connections==========
+- Transports in MCP
+1. stdio
+- Communicates over the process standard input/output streams-- no network involved
+at all
+- A client launches server.py as a subprocess and pipes messages to/from it via
+stdin/stdout
+- Is FastMCP default and best for local use only
+- Server starts when the client launches and stops when client(claude desktop) stops.
+
+2. http
+- Communicates over HTTP, on a real network socket
+	"host:port" e.g 127.0.0.1:8000
+- Any client locally/remote with ability to reach the client can make a request.
+- Can be deployed on a VM or a container and clients can access it.
+- Server process is independent and runs continously
+- In our case change to:
+	"mcp.run(transport="http", host="127.0.0.1", port=8000)"
+
+
+

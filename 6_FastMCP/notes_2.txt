@@ -1,0 +1,137 @@
+======What is MCP?========
+- Is an open source protocol that exposes tools, resources, and prompts to LLM clients
+- Is the standard for AI tools
+- An MCP Server is a small program that exposes a list of tools.
+- An MCP Client is anything that connects to that server e.g:
+	> AI Agents
+	> Claude Desktop/Cursor/Claude Code/Codes
+lets an LLM call those tools.
+
+====Transport Systems in MCP=====
+- We have:
+1. stdio
+> Server runs a subprocess of the client, communicating over stio/stdout
+> Best for local tools that only your agent needs
+
+2. http:
+> The server runs as an HTTP service and clients connect over the network.
+> Best for shared or remote tools.
+
+=======What is FastMCP?=========
+- Is a python library that makes writing an MCP server feel like writing a fastAPI app.
+- We decorate functions using:
+	"@mcp.tool"
+and FastMCP library handles the protocol details:
+	> JSON-RPC messages.
+	> tool schema generation from your type hints and docstring.
+	> transport layer.
+- On the LangChain(agent orchestration framewrok), "langchain-mcp-adapters" is a
+library that connects to one or more MCP servers and loads their tools into a 
+format langChains "create_agent" can use directly
+- This abstraction makes the agent not to know if a tool lives in a subprocess on
+your machine or on a remote server.
+- The agent will only see a list of tools and descriptions(docString).
+
+=======Example======
+- Build a local MCP server with two tools:
+	> connect to DeepWiki's free public MCP server for GitHub repo lookups
+	> langchain adapters to load the model
+- The flow:
+1. Local MCP Server a standalone Python Script that exposes current_time and word_count(stdio)
+2. Remote MCP server is DeepWiki's public service that has three tools:
+	> read_wiki_structure
+	> read_wiki_contens
+	> ask_questions
+about any GitHub repo(http)
+3. Agent connects to both local and over the network tools🚀🎉⚓
+
+=====stdio local tool=======
+- Contains three tools:
+	1. current date and time
+	2. word count of text
+	3. Image description tool
+- Code:
+**************************************************************
+#!/usr/bin/python3
+from datetime import datetime
+from fastmcp import FastMCP
+# user defined function for image description
+from vision import describe_image
+
+# create an object from the class
+mcp=FastMCP("local-tools")
+
+# the decorator turns our function into a tool
+@mcp.tool
+def current_time()-> str:
+    """
+    Return the current local date and time
+    Use this wehn the user asks what time or date it is
+    """
+    # the above Docstring provides tool description to the llm
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+# our next tool
+@mcp.tool
+def word_count(text: str)-> int:
+    """
+    Count the number of words in a piece of text
+    Use this when the user asks how long a piece of writing is or
+    asks you to count the words in something they've shared.
+    Returns the word count as an integer
+    """
+    return len(text.split())
+
+# add our extra tool---> Image description using a free model
+@mcp.tool
+def image_info(image_path: str)-> str:
+    """
+    Use this when user wants to know what the image entails
+    User must have provided the path to where the image is
+    Returns the description of the image content
+    """
+    # call our function that will carry this task
+    result=describe_image(image_path)
+    return result
+
+if __name__=="__main__":
+    # run the MCP server over stdio
+    mcp.run()
+**************************************************************
+NOTE: Since the code above "mcp_server.py" is run in stdio mode as a
+subproces, we don't need to start it separately. The agent runs it automatically.
+
+
+========Agent Python Code=========
+- The code agent does three things.
+1. Configuration at the top defines the model.
+2. System Prompt.
+3. URL of the remote server.
+- The build_agent() function connects to both MCP servers, loads their
+tools into a single list and creates an agent.
+- We have a "tool call" log line allowing us tools being called(local/remote)
+the agent picked on each turn.
+- Await is used because build_agent(client) is asynchronous. without it
+we would just get a coroutine object instead of the actual agent.
+Code:
+	"agent_with_mcp.py"
+
+
+
+
+one line summary on this repository "swisskyrepo / PayloadsAllTheThings"
+
+Answer the questions from the image "J:\11_Voice_Assistant\6_FastMCP\tutorial_2\my_quiz.png"
+
+
+        "deepwiki":{
+            "url":DEEPWIKI_MCP_URL,
+            "transport":"streamable_http",
+        }
+
+
+=======Python Quick Quiz=======
+1. Define Python in one line
+2. Difference between variable and constant in one line
+3. Write code to get input from the user and add the two numbers
+
