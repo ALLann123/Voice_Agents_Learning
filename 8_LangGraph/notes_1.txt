@@ -1,0 +1,530 @@
+========What is LangGraph?===========
+- Was created to manage workflows
+- Example:
+	> Search the web for the latest AI news
+	> Summarize it
+	> Save it to a file
+	> email file to me
+AI needs to:
+1. Think
+2. Search
+3. Summarize
+4. Write file
+5. Email
+- Each stop above is a task.
+	> we call this a Node
+- LangChain had limitations and needed to:
+	> remember things
+	> make decisions
+	> call tools
+	> retry failures
+	> pause
+	> ask questions
+	> continue later
+- A graph is simply:
+	- Points
+	- Connected by lines
+The points are called nodes
+The lines are called Edges
+- Install:
+	cmd>> uv pip install langgraph
+/ 	cmd>> uv add langgraph
+
+
+
+==========Key Definations============
+1. Graph: A workflow made of connected steps
+2. Node:  A function that performs one task
+3. Edge: A connection that tells the graph what to execute next
+4. State: Shared data that flows through every node
+5. START: The entry point of a graph
+6. END: Point where execution finishes
+7. compile(): Turns workflow into an executable graph
+6. invoke(): Runs the graph with an initial state
+
+
+=========Understanding State==============
+- Most important part of LangGraph
+- If you understand state you understand 70% of LangGraph
+- Imagine an online application form:
+	Name: Allan
+	Age: 25
+	Country: Kenya
+	Course: Computing Science
+Every page of the application can access this information
+- This shared information is called state
+- In LangGraph:
+	"Every node can read the current state, modify it, and pass the updated state to the next node."
+
+=======Creating a State=========
+- LangGraph usually uses Python's "TypedDict"
+************************************
+from typing import TypedDict
+
+class State(TypedDict):
+	name: str
+************************************
+Now the state looks like(remember its a dictionary):
+	{
+		"name":"Allan"
+	}
+- We can also have multiple variables:
+************************************
+from typing import TypedDict
+
+class State(TypedDict):
+	name: str
+	age: int
+	city: str
+************************************
+Looks like:
+	{
+		"name": "Allan",
+		"age": 25,
+		"city": "Nairobi"
+	}
+- Each node has access to the three variables. And can update it
+
+
+==========What is a Node?==========
+- Is a python function
+- Performs tasks inthe graph workflow
+- Think of a node like a worker
+In a factory:
+	Raw Material--> Worker 1----> Worker 2---> Worker 3---> PRoduct
+Each worker has one job
+- Nodes should also have one responsibility
+Examples:
+	> Read a file
+	> Search the web
+	> Call an llm
+	> Perform calculation
+	> Save to a database
+	> Generate a report
+Bad example:
+> Clutering: search, summarize, translate and Email in a single node.
+
+======Anatomy of a Node=====
+1. Receive state:
+	"def greet(state: AgentState)-> AgentState:"
+State enters the node(remember a node is a function).
+
+2. Does some work
+	name=state['name']
+Maybe turn the name into uppercase
+Perform search on database for the information
+Call a Tool like web search or an LLM
+
+3. Returns the updated state
+	return state
+We send back the new updated state after the node(function) finishes execution
+
+
+=============What is an Edge?================
+- Real life AI agents don't always follow a single path, they need to make decision.
+Edges play this role inthe Graph.
+- An Edge is simply a connection between two nodes
+Analogy "Nairobi-------Nakuru" road
+- The node tells the graph:
+	"After Node A finishes, run Node B"
+- Example of how we are adding nodes:
+*********************************
+graph.add_node("greet", greeting)
+graph.add_node("bye", good_bye)
+
+# connect the nodes using edges
+graph.add_edge("greet", "bye")
+*********************************
+- Every LangGraph workflow has a Start and End
+We can set:
+*******************************
+graph.add_edge(START, "greet")
+graph.add_edge("bye", END)
+*********************************
+OR:
+*********************************
+graph.set_entry_point("greet")
+graph.set_finish_point("bye)
+*********************************
+
+
+========Conditional Edges=============
+- Allow a graph to choose a different route
+- This is made possible using a router python function
+- A router:
+	> is another python function
+	> Decides and returns the next node to run
+NOTE:
+1. It doesnt execute anything
+2. Decides where to go
+- Additing a conditional edge:
+*********************************
+graph.add_conditional_edges(
+	"router",
+	route
+)
+*********************************
+The router decides the next node we will execute
+
+
+
+========What is StateGraph===========
+- "graph=StateGraph(AgentState)"
+- This creates a graph builder object.(Object Oriented Programming)
+- Architect drawing blue_print
+- Allows us to describe our workflow(has methods such as "add_node")
+- Designs workflow
+
+========What does Compile Do?===========
+- Compilation checks:
+	> Are all node names valid
+	> Are the edges connected correctly
+	> Is there a path from START to END
+	> Are there missing nodes?
+	> Are there impossible routes?
+If all checks pass, we get an executable Graph.
+- Runs the workflow
+
+
+========Why Invoke()========
+- This provides us with a way to run the graph
+**************************
+result=app.invoke({"message":"Hey"})
+**************************
+- The invoke() starts execution at START and returns the final State
+
+========Stream==========
+- User can see progress as it happens. Useful for debugging
+- Important when:
+	> Calling multiple tools
+	> Long-running research agents
+	> Multi-Agent workflows
+N/B: One of the easiest way to debug is by printing state in each node
+- Use this in production to bview the workflow
+
+
+======Building Your First AI Agent============
+what is an AI Agent?
+Many Beginners think an AI Agent is just an llm.
+LLM Just:
+	> Generates text
+- An AI agent can think, make decisions and use tools
+	Question--> Think--> Need Tool--> Yes--> Use tool--> Answer
+
+********************************************************
+                START
+
+                  │
+
+                  ▼
+
+           Analyze Question
+
+                  │
+
+                  ▼
+
+             Decision Router
+
+            /               \
+
+           /                 \
+
+     Calculator            Chat
+
+           \                 /
+
+            \               /
+
+                  ▼
+
+             Final Answer
+
+                  │
+
+                  ▼
+
+                 END
+
+********************************************************
+- The router should be powered by an LLM.
+- Structure:
+                 Analyze
+
+                    │
+
+                    ▼
+
+               Route Request
+
+      ┌────────┬────────┬────────┐
+
+      ▼        ▼        ▼        ▼
+
+ Calculator  Weather  Search  Calendar
+
+      │        │        │        │
+
+      └────────┴────────┴────────┘
+
+                 ▼
+
+              Respond
+
+- Our new voice assistant should look like:
+*************************************************
+               User Speaks
+
+                    │
+
+                    ▼
+
+             Speech-to-Text
+
+                    │
+
+                    ▼
+
+             Analyze Intent
+
+                    │
+
+          ┌─────────┼─────────┐
+
+          ▼         ▼         ▼
+
+    Calculator   Web Search  Vision
+
+          │         │         │
+
+          └─────────┼─────────┘
+
+                    ▼
+
+              Generate Reply
+
+                    ▼
+
+             Text-to-Speech
+
+                    ▼
+
+                   END
+*************************************************
+- In the above the tool Nodes will be calling our MCP server.
+
+==========Key Takeaways==========
+- An AI Agent is more than an LLM
+- Routers decide what to run next
+- Each tool is represented by its own node. MCP servers integrate naturally by being
+called from tool nodes.
+- Architecture scales as you add more capabilities.
+
+
+=============What is Memory in LangGraph==============
+- Is information that survives beyond one node or one graph execution
+
+1. State(Temporary Memory)
+START
+ |
+Node A
+ |
+Node B
+ | 
+END
+The state exists only when the graph is running
+- LangGraph itself focuses on Agent orchestration. Long-Term memory is usually
+implemented with databases or vector stores, while LangGraph coordinates how they
+are used.
+
+=======State Vs Memory=====
+- State lives during one graph execution while memory Lives across graph executions.
+
+
+=====How LangGraph Adds Memory======
+- Introduces the idea of a checkpointer
+- Think of it as an automatic save system in a video game
+
+=====CheckPointer=======
+- Instead of throwing away the state after execution we can save it
+- Next time we can load it and continue
+
+======The MemorySaver CheckPointer=======
+- For learning, langGraph provides an in-memory checkpointer
+**************************************************************************
+from langgraph.checkpoint.memory import MemorySaver
+
+memory=MemorySaver()
+**************************************************************************
+This stores the conversation history in memory while our program is running
+
+====Attaching the Memory======
+- Normally
+	"app=graph.complie()"
+- With memory:
+*************************************
+app=graph.compile(
+	checkpointer=memory,
+)
+*************************************
+- Now our graph can remember previous executions.
+
+
+==========Threads============
+- Each conversation has different memory, LangGraph will call each one a thread.
+- By invoing a graph with memory you provide a thread identifier:
+*************************************
+config={
+	"configurable":{
+				"thread_id":"user1"
+			}
+	}
+}
+*************************************
+- Now invoke it
+*************************************
+graph.invoke(
+	state,
+	config=config,
+)
+*************************************
+- Make sure all users have an independent history using thread_id.
+- This is for testing and development phase.
+
+=======The State Schema=======
+"messages: Annotated[list[BaseMessage], add_messages]"
+- messages: variable to hold our messages
+- list[BaseMessage]: Python type hint. Specifies that this variable(messages) holds a collection
+of LangChain messaging objects:
+	HumanMessage
+	AIMessage
+	SystemMessage
+- Annotated: applies a specific rule to the messages stored in the variable.
+- add_messages: The reducer function. If a node returns a new message, it is appended to the
+list of existing chats.
+	"This prevents the chat history from being wiped out by each new node"
+
+=============Tools In LangGraph=============
+- In real AI agents, the node does not perform the work itself.
+- A Tool is a python function that perform one specific task
+E.G:
+	Calculator
+	Weather lookup	
+	Web Search
+	Database query
+	Read DF
+	Vision
+	Current time
+- A tool extends what an LLM can do
+- Analogy:
+	LLM---> "I know things"
+Add Calculator--> perform arithmetic
+Add Google--> web search
+*************************WORKFLOW******************************
+                    User
+
+                      │
+
+                      ▼
+
+               Speech-to-Text
+
+                      │
+
+                      ▼
+
+                 LLM Planner
+
+          ┌──────────┼──────────┐-----------------> FastMCP
+
+          ▼          ▼          ▼
+
+      Calculator   Search   Vision
+
+          ▼          ▼          ▼
+
+           └─────────┼──────────┘
+
+                     ▼
+
+              Generate Response
+
+                     ▼
+
+              Text-to-Speech
+
+                     ▼
+
+                    END
+***************************************************************
+
+
+=========Tool Calling LangGraph============
+- Programmer never decides which tool to use
+- The LLM does
+- We register them--> this is how the LLM know about available tools
+- Example:
+******************************************
+from langchain_core.tools import tool
+
+@tool
+def current_time():
+	"""Return the current local time"""
+	return datetime.now().strftime("%H:%M")
+******************************************
+- The DocString is extremely important
+- LLM reads the Docstring and understands what the tool does
+- The DocString will tell the LLM when to use the tool
+- Registering tool:
+************************************************
+tools=[
+	calculator,
+	current_time,
+]
+************************************************
+- Now provide the LLM with tools
+************************************************
+llm=ChatOpenAI(model="gpt-4.1")
+
+llm_with_tools=llm.bind_tools(tools)
+************************************************
+- Now the LLM will be aware of the two tools
+
+=======ToolNode========
+- Instead of us writing our own calculator node, langGrah provides as with one
+************************************************
+from langgraph.prebuilt import ToolNode
+
+tool_node=ToolNode(tools)
+************************************************
+This toolNode abstraction is used to execute which ever tool the LLM requested.
+*********WORKFLOW*********
+User
+
+↓
+
+LLM
+
+↓
+
+ToolNode
+
+↓
+
+LLM
+
+↓
+
+Answer
+*******************************
+
+
+
+
+
+
+
+
+
+
+	

@@ -1,0 +1,162 @@
+"""
+Agent graph:
+
+    START -> Analyze -> Router -> {Calculator, Greeting, Time} -> END
+
+- State is a plain TypedDict (kept as simple as possible).
+- Calculator node talks to the local MCP server (mcp_server.py) over stdio.
+- Greeting and Time nodes are plain local tools, no MCP needed.
+"""
+
+import asyncio          # lets us run the async graph (calculator_node is async because MCP calls are async)
+import re                # used for keyword/pattern matching in the router and for cleaning the math expression
+from datetime import datetime           # used by the time_node to stamp the current time
+from typing import Literal, Optional, TypedDict   # TypedDict keeps the state as a plain, simple dict-with-types
+
+from langgraph.graph import END, START, StateGraph      # core graph-building primitives from LangGraph
+from mcp import ClientSession, StdioServerParameters    # MCP client session + config for launching a stdio server
+from mcp.client.stdio import stdio_client                # helper that spawns the MCP server subprocess and gives us read/write streams
+
+# Restrict intent to exactly the three branches in the diagram (Calculator, Greeting, Time).
+# Using Literal instead of a plain str catches typos ("clalculator") at type-check time.
+Intent = Literal["calculator", "greeting", "time"]
+
+
+# ---------------------------------------------------------------------------
+# State
+# ---------------------------------------------------------------------------
+class State(TypedDict):
+    # TypedDict = "just a dict" at runtime, but static tools/IDEs know the shape.
+    # This is intentionally the smallest state that can carry the graph: the
+    # incoming text, the decided branch, and the final answer.
+    query: str                 # raw user input, e.g. "What is 12 * 7 + 3?"
+    intent: Optional[Intent]   # filled in by the router node; None until then
+    result: Optional[str]      # filled in by whichever leaf node runs; None until then
+
+
+# ---------------------------------------------------------------------------
+# Nodes
+# ---------------------------------------------------------------------------
+def analyze(state: State) -> State:
+    """Light preprocessing of the raw query. Intent decision itself lives
+    in the Router node so the graph shape matches the diagram."""
+    # Nodes only need to return the keys they change; LangGraph merges the
+    # returned dict into the existing state for us.
+    return {"query": state["query"].strip()}
+
+
+def router(state: State) -> State:
+    """Decides intent. The actual branching happens via the conditional
+    edge added below, which reads state['intent']."""
+    q = state["query"].lower()  # case-insensitive keyword matching
+
+    # Rule 1: looks like arithmetic (e.g. "12 * 7") or mentions a math verb -> calculator
+    if re.search(r"\d\s*[\+\-\*/]\s*\d", q) or any(
+        w in q for w in ("calculate", "sum", "product", "plus", "minus")
+    ):
+        intent: Intent = "calculator"
+    # Rule 2: mentions time/date words -> time
+    elif any(w in q for w in ("time", "clock", "date", "today")):
+        intent = "time"
+    # Fallback: anything else is treated as a greeting/small talk
+    else:
+        intent = "greeting"
+
+    return {"intent": intent}  # stored in state so the conditional edge below can read it
+
+
+def route_from_router(state: State) -> Intent:
+    # This is the "condition function" LangGraph calls after the router node
+    # runs. Its return value must match one of the keys in the edge map
+    # passed to add_conditional_edges (below) and picks which node runs next.
+    return state["intent"]
+
+
+async def calculator_node(state: State) -> State:
+    """Calls the 'calculate' tool on the local MCP server via stdio."""
+    # Strip anything that isn't a digit/operator/parenthesis/space so we only
+    # ever send a clean arithmetic expression over to the MCP tool.
+    expression = re.sub(r"[^0-9+\-*/(). ]", "", state["query"])
+
+    # StdioServerParameters describes HOW to launch the MCP server: run
+    # `python mcp_server.py` as a subprocess and talk to it over stdin/stdout.
+    server_params = StdioServerParameters(command="python", args=["mcp_server.py"])
+
+    # stdio_client spawns that subprocess and hands back a (read, write)
+    # pair of streams wired to its stdin/stdout.
+    async with stdio_client(server_params) as (read, write):
+        # ClientSession wraps those streams with the actual MCP protocol
+        # (handshake, tool discovery, tool calls, etc.).
+        async with ClientSession(read, write) as session:
+            await session.initialize()  # required MCP handshake before any tool calls
+            # Call the "calculate" tool defined in mcp_server.py, passing the
+            # expression as its single argument.
+            response = await session.call_tool("calculate", {"expression": expression})
+            text = response.content[0].text  # MCP tool results come back as content blocks; we want the first block's text
+
+    return {"result": f"Result: {text}"}
+
+
+def greeting_node(state: State) -> State:
+    # Plain local "tool" - no MCP round trip needed for something this simple.
+    return {"result": "Hello! How can I help you today?"}
+
+
+def time_node(state: State) -> State:
+    # Another plain local tool: just reads the machine clock.
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return {"result": f"Current time: {now}"}
+
+
+# ---------------------------------------------------------------------------
+# Graph
+# ---------------------------------------------------------------------------
+graph = StateGraph(State)  # bind the graph to our TypedDict schema
+
+# Register every node under a string name; that name is what edges refer to.
+graph.add_node("analyze", analyze)
+graph.add_node("router", router)
+graph.add_node("calculator", calculator_node)
+graph.add_node("greeting", greeting_node)
+graph.add_node("time", time_node)
+
+# START -> Analyze -> Router  (straight-line part of the diagram)
+graph.add_edge(START, "analyze")
+graph.add_edge("analyze", "router")
+
+# Router -> {Calculator, Greeting, Time}  (the fan-out in the diagram).
+# route_from_router() returns one of the three keys below, and LangGraph
+# follows the matching edge; nothing is a "regular" static edge here because
+# the destination depends on runtime state.
+graph.add_conditional_edges(
+    "router",
+    route_from_router,
+    {"calculator": "calculator", "greeting": "greeting", "time": "time"},
+)
+
+# {Calculator, Greeting, Time} -> END  (the fan-in/convergence in the diagram).
+# No merge node is needed - LangGraph allows several nodes to each point
+# straight at END.
+graph.add_edge("calculator", END)
+graph.add_edge("greeting", END)
+graph.add_edge("time", END)
+
+app = graph.compile()  # turns the graph definition into a runnable object
+
+
+# ---------------------------------------------------------------------------
+# Smoke test
+# ---------------------------------------------------------------------------
+async def main() -> None:
+    # One example query per branch, to exercise Calculator (-> MCP),
+    # Greeting, and Time all in one run.
+    queries = ["What is 12 * 7 + 3?", "Hello there!", "What time is it right now?"]
+    for q in queries:
+        # ainvoke runs the whole graph start-to-finish for one input state
+        # and returns the final state dict.
+        out = await app.ainvoke({"query": q, "intent": None, "result": None})
+        print(f"Query: {q}\n-> {out['result']}\n")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())  # entry point when running `python agent.py` directly
