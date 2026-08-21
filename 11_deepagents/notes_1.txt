@@ -1,0 +1,47 @@
+============DeepAgents Overview=============
+- Easiest way to build applications that are powered by LLMs:
+- Built-in Capabilities:
+	> for file systems
+	> for context management
+	> Subagent-spawning
+	> long-term memory
+- Use it for complex or multi-step tasks
+
+===========Capabilities of Deep Agents==============
+1. Take Action in an environment(ReAct):
+- Take actions via tools, read and write files, execute code
+
+2. Connect to your data:
+- Load memories, skills and domain knowledge at the right moment
+
+3. Manage growing context:
+- Summarize history and offload large results across long runs
+
+4. Parallelize tasks:
+- Delegate to general or specialized subagents running in isolated context
+windows.
+
+5. Stay in the loop:
+- Pause for human approval at critical decision points.
+
+6. Improve over time:
+- Update memory,skills, and prompts based on real usage
+
+==========Quick Start===============
+- Let's build an agent with:
+	> file system tools
+	> subagent capabilities
+- Build a research agent that can conduct research and write reports
+
+=========Build the FastMCP server first============
+- MCP is an open protocol that allows AI models to use external tools
+- LLM decides:
+	> I shouldnt calculate this myself
+	> I'll call the calculator Tool
+- FastMCP is a python framework for building MCP servers.
+- Abstracts how the code works internally and the server provides AI with:
+	> Tool's name
+	> Description
+	> Parameters
+	> and the returned value
+
