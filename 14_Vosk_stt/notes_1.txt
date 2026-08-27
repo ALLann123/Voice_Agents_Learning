@@ -1,0 +1,133 @@
+===========================VOSK====================================
+- Is an open-source, offline speech recognition toolkit.
+- Supports over 20 languages.
+- Lightweight and runs locally on devices.
+
+===installation=====
+- Using uv:
+	cmd>> uv pip install vosk
+- Download available models:
+	https://alphacephei.com/vosk/models
+- Choose the light models.
+
+*********transcribe.py**************
+#!/usr/bin/python3
+import json
+import wave
+import sys
+from vosk import Model, KaldiRecognizer
+
+# define paths
+#MODEL_PATH="vosk-model-small-en-us-0.15"
+MODEL_PATH="vosk-model-small-de-0.15"
+AUDIO_FILE="test.wav"
+
+# 2. Load the model
+try:
+    model = Model(MODEL_PATH)
+except Exception:
+    print(
+        f"Please download the model from ://alphacephei.com and unpack as '{MODEL_PATH}' in the current folder."
+    )
+    sys.exit(1)
+
+# open audio file
+wf=wave.open(AUDIO_FILE)
+
+# Verify audio file compatibility
+if wf.getnchannels() != 1 or wf.getsampwidth() != 2 or wf.getcomptype() != "NONE":
+    print("Audio file must be WAV format mono PCM.")
+    sys.exit(1)
+
+# Initialize recognizer 
+recognizer=KaldiRecognizer(model, wf.getframerate())
+
+print("[+]Transcribing audio file....please wait!")
+
+# 5. Read and process the audio data in chunks
+while True:
+    data = wf.readframes(4000)
+    if len(data) == 0:
+        break
+
+    # AcceptWaveform streams data chunk by chunk (simulating real-time)
+    if recognizer.AcceptWaveform(data):
+        # Printed when a full sentence/phrase is finalized
+        result = json.loads(recognizer.Result())
+        print(result["text"])
+
+# 6. Print the final remaining text block
+final_result = json.loads(recognizer.FinalResult())
+print(final_result["text"])
+************************************
+
+
+=======================Piper=================================
+- Piper is a lightweight, offline neural text-to-speech engine, built to run fast
+on CPU(even raspberry Pi).
+- Install:
+	cmd>> uv pip install piper-tts
+
+
+====Voice Models====
+- Each voice=two files that must live in the same folder:
+<name>.onnx -- the actual model weights
+<name>.onnx.json --config(phoneme map, sample rate, espeak voice, etc)
+****************************************************************
+Directory of J:\11_Voice_Assistant\14_Vosk_stt\piper_voices
+
+08/26/2026  03:20 PM    <DIR>          .
+08/26/2026  03:20 PM    <DIR>          ..
+08/26/2026  03:15 PM        63,201,294 de_DE-thorsten-medium.onnx
+08/26/2026  03:16 PM             4,819 de_DE-thorsten-medium.onnx.json
+08/26/2026  03:08 PM        63,201,294 en_US-lessac-medium.onnx
+08/26/2026  03:09 PM             4,885 en_US-lessac-medium.onnx.json
+****************************************************************
+- Browse voices to decide what to use:
+	https://rhasspy.github.io/piper-samples/
+- To download a voice model we use "Curl" command:
+	cmd>> curl -L -o en_US-lessac-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
+	cmd>> curl -L -o en_US-lessac-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
+NOTE: We are given different accents🔥🔥
+
+************************try_speak_piper.py******************************
+#!/usr/bin/python3
+from piper import PiperVoice
+import sounddevice as sd
+import numpy as np
+
+MODEL_PATH = "piper_voices/en_US-lessac-medium.onnx"
+#MODEL_PATH = "piper_voices/de_DE-thorsten-medium.onnx"
+
+# Load once at startup — reuse across calls, loading the model is the slow part
+voice = PiperVoice.load(MODEL_PATH)
+
+def speak(text: str):
+    """Synthesize text to speech and play it immediately."""
+    audio_chunks = []
+    for chunk in voice.synthesize(text):
+        audio_chunks.append(np.frombuffer(chunk.audio_int16_bytes, dtype=np.int16))
+
+    audio = np.concatenate(audio_chunks)
+    sd.play(audio, samplerate=voice.config.sample_rate)
+    sd.wait()  # block until playback finishes
+
+if __name__ == "__main__":
+    speak("Hello, I am Allan. I love programming computers and soccer.")
+***************************************************************************
+
+- SynthesisConfig:
+Param		Default		Effect
+Length_scale 	1.0		Speech speed. >1.0=slower, <1.0=faster. 1.2-1.5 is a good "slow down" range.
+noise_scale 	~0.667		Voice variation/expressiveness
+noise_w_scale	~0.8 		Variation in rhythm/timing
+
+
+***************Save to file instead of streaming directly***********************
+import wave
+
+def speak_to_file(text: str, output_path: str = "response.wav"):
+    with wave.open(output_path, "wb") as wf:
+        voice.synthesize_wav(text, wf)
+    return output_path
+********************************************************************************
