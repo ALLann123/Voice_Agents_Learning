@@ -1,0 +1,113 @@
+==========Ollama Models========
+- Provides us a way to run AI models locally
+
+===================1. TinyLlama 1.1B=========================
+Model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+- TinyLllama is a small, lightweight LLM with approximately 1.1 billion parameters
+- It is designed to be efficient enough to run on relatively modest hardware
+- Can run without GPU. Suitable for Rasberry pie
+- Install:
+	cmd>> ollama pull tinyllama
+- It is 638MB
+- Verify:
+	cmd>> ollama list
+***********************************
+C:\Users\user>ollama list
+NAME                ID              SIZE      MODIFIED
+tinyllama:latest    2644915ede35    637 MB    3 minutes ago
+***********************************
+
+- Run the model:
+	cmd>> ollama run tinyllama
+OUTPUT Below:
+******************************************************************************************************
+C:\Users\user>ollama run tinyllama
+>>> Hello, who are you
+I'm a virtual assistant who provides helpful information and support to individuals and businesses online.
+Throughout the internet, there are countless chatbots, virtual assistants, and other AI-powered tools that help
+people navigate their digital experiences. However, I differ from these other tools in that I was specifically
+created and designed to be a human-like assistant that provides personalized support and assistance to users who
+seek it.
+
+>>> "wo ist das caffe" translate to ENglish
+Sure, here's the English translation of the sentence "wo ist das caffe":
+
+"Where is the coffee shop?"
+
+The sentence "wo ist das caffe" translates to English as follows:
+
+Where is the coffee shop?
+******************************************************************************************************
+========Advantage if tinyllama=======
+1. Very small and fast compared with larger models
+2. Low RAM requirements
+3. Can run on CPU-only
+4. Good for basic conversation
+NOTE: We are able to fine tune it easily and we can add RAG.
+
+==========Disadvantages==========
+- Limited Reasoning ability 
+- Can hallucinate frequently
+- Weak instruction following
+- Coding ability is limited
+- Translation can be unreliable
+- Can produce unnecessarily long or strange responses
+- Not ideal for sophisticated AI agents.
+
+----------The hardware I have---------
+6th Gen Core i5
+8 GB RAM
+No GPU
+--------------------------------------
+
+
+
+=================2.Qwen2.5:3B===================
+- Significanyly larger model with approximately 3.09 billion parameters.
+- Qwen is quantized, making it practical to run locally on CPU-based systems
+- Pull:
+	cmd>> ollama pull qwen2.5:3b
+- The file size is 1.9GB
+- Verify installation:
+	cmd>> ollama list
+*************************************
+C:\Users\user>ollama list
+NAME                ID              SIZE      MODIFIED
+qwen2.5:3b          357c53fb659c    1.9 GB    13 minutes ago
+tinyllama:latest    2644915ede35    637 MB    About an hour ago
+
+*************************************
+- Run it:
+	cmd>> ollama run qwen2.5:3b 
+
+**************************************************************************
+>>>
+>>> hey
+⠏ Hello! How can I assist you today?
+
+>>> translate to English:"Hallo, miene frau ist hungrig. Kaffee mit kekse nein zucker bitte"
+Sure, here is the translation of the German text to English:
+
+"Hallo, meine Frau ist hungrig. Kaffee mit Kekse ohne Zucker bitte."
+
+This translates to:
+
+"Hello, my lady is hungry. Coffee with cookies without sugar, please."
+**************************************************************************
+
+=======Advantages============
+1. Much better for instruction following
+2. Better reasoning than TinyLlama
+3. Better coding ability
+4. Better mathematics
+5. Better multilingual support.
+6. Better structured/JSON output
+7. Can run AI-Agents for experimentation
+8. Small and lightweight to be run on cheap hardware
+
+
+========Disadvantages======
+1. Still weaker than modern 7B-14B+ models
+2. Can still hallucinate
+3. Complex reasoning can fail.
+4. CPU Inference means generation speed will be limited.
